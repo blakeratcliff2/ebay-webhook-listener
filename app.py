@@ -4,7 +4,7 @@ import os
 app = Flask(__name__)
 
 # Set your token (this must match what you input on eBay)
-VERIFICATION_TOKEN = "ai-ebay-listener-2025"
+VERIFICATION_TOKEN = "ai-ebay-listener-2025-token-for-marketplace-verify"
 
 @app.route('/', methods=['GET', 'POST'])
 def webhook():
