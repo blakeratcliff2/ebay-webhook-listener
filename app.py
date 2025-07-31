@@ -1,35 +1,35 @@
-import os
+# app.py
 from flask import Flask, request, jsonify
+import hashlib
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
-EXPECTED_TOKEN = "ai-ebay-verify-2025-9fB7KxRzLdVpWm82QaJtG3YuNvX0CeLsThAyRfBz"
+VERIFICATION_TOKEN = os.getenv("EBAY_VERIFICATION_TOKEN")
 
-@app.route("/", methods=["GET"])
-def verify_ebay_webhook():
-    challenge_code = request.args.get("challenge_code")
-    verification_token = request.args.get("verification_token")
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "GET":
+        challenge_code = request.args.get("challenge_code")
+        endpoint = request.base_url
 
-    print("----- Incoming GET Request -----")
-    print("Full URL:", request.url)
-    print("Query string:", request.query_string)
-    print("challenge_code:", challenge_code)
-    print("verification_token:", verification_token)
-    print("--------------------------------")
+        if not challenge_code:
+            return "Missing challenge_code", 400
 
-    if not challenge_code or not verification_token:
-        return "Missing challenge_code or verification_token", 400
+        concat = challenge_code + VERIFICATION_TOKEN + endpoint
+        response_hash = hashlib.sha256(concat.encode("utf-8")).hexdigest()
 
-    if verification_token != EXPECTED_TOKEN:
-        return "Invalid verification token", 403
+        print(f"Returning challengeResponse: {response_hash}")
+        return jsonify({"challengeResponse": response_hash})
 
-    return jsonify({"challengeResponse": challenge_code}), 200
-
-@app.route("/health", methods=["GET"])
-def health_check():
-    return "Webhook is alive", 200
+    elif request.method == "POST":
+        print("Received POST (notification):")
+        print(request.get_json())
+        return '', 200
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))  # Railway uses 8080
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=8080)
 
