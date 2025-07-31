@@ -1,1 +1,2 @@
-web: gunicorn webhook_listener:app
+web: gunicorn app:app
+
