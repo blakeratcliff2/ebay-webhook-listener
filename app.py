@@ -1,43 +1,39 @@
-import os
-import hashlib
 from flask import Flask, request, jsonify
+import hashlib
+import os
 
 app = Flask(__name__)
 
-# Load from environment variable set in Railway
+# Load from environment (Railway variable)
 VERIFICATION_TOKEN = os.environ.get("VERIFICATION_TOKEN")
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
         challenge_code = request.args.get("challenge_code")
+        endpoint = request.base_url
 
-        if not challenge_code:
-            return "Missing challenge_code", 400
-        if not VERIFICATION_TOKEN:
-            return "Missing VERIFICATION_TOKEN in environment", 500
-
-        endpoint = request.url_root.rstrip("/")
-
-        # Logging for debugging
         print("----- Incoming GET Request -----")
-        print(f"challenge_code: {challenge_code}")
-        print(f"endpoint: {endpoint}")
-        print(f"VERIFICATION_TOKEN: {VERIFICATION_TOKEN}")
+        print("challenge_code:", challenge_code)
+        print("endpoint:", endpoint)
+        print("VERIFICATION_TOKEN:", VERIFICATION_TOKEN)
 
-        # Create hash of challengeCode + verificationToken + endpoint
-        combined = challenge_code + VERIFICATION_TOKEN + endpoint
-        response_hash = hashlib.sha256(combined.encode("utf-8")).hexdigest()
+        # Validate inputs
+        if not challenge_code or not VERIFICATION_TOKEN or not endpoint:
+            return "Missing challenge_code or VERIFICATION_TOKEN", 400
 
-        return jsonify({"challengeResponse": response_hash}), 200
+        # Concatenate and hash
+        concat = challenge_code + VERIFICATION_TOKEN + endpoint
+        hash_obj = hashlib.sha256(concat.encode("utf-8"))
+        challenge_response = hash_obj.hexdigest()
 
-    # Handle POST notifications later
+        return jsonify({"challengeResponse": challenge_response})
+
     if request.method == "POST":
+        print("----- Incoming POST Notification -----")
+        print(request.json)
         return "", 200
 
     return "Unsupported method", 405
-
-if __name__ == "__main__":
-    app.run(debug=True)
 
 
