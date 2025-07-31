@@ -1,39 +1,42 @@
-from flask import Flask, request, jsonify
-import hashlib
 import os
+import hashlib
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Load from environment (Railway variable)
+# Get the verification token from Railway environment variable
 VERIFICATION_TOKEN = os.environ.get("VERIFICATION_TOKEN")
+
+# Must match the URL eBay uses to send the challenge (with https and trailing slash)
+ENDPOINT = "https://web-production-98b2f.up.railway.app/"
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
         challenge_code = request.args.get("challenge_code")
-        endpoint = request.base_url
-
         print("----- Incoming GET Request -----")
-        print("challenge_code:", challenge_code)
-        print("endpoint:", endpoint)
-        print("VERIFICATION_TOKEN:", VERIFICATION_TOKEN)
+        print(f"challenge_code: {challenge_code}")
+        print(f"endpoint: {ENDPOINT}")
+        print(f"VERIFICATION_TOKEN: {VERIFICATION_TOKEN}")
 
-        # Validate inputs
-        if not challenge_code or not VERIFICATION_TOKEN or not endpoint:
-            return "Missing challenge_code or VERIFICATION_TOKEN", 400
+        if not challenge_code or not VERIFICATION_TOKEN:
+            return jsonify({"error": "Missing challenge_code or VERIFICATION_TOKEN"}), 400
 
-        # Concatenate and hash
-        concat = challenge_code + VERIFICATION_TOKEN + endpoint
-        hash_obj = hashlib.sha256(concat.encode("utf-8"))
-        challenge_response = hash_obj.hexdigest()
+        # Hash using: challenge_code + VERIFICATION_TOKEN + endpoint
+        combined = challenge_code + VERIFICATION_TOKEN + ENDPOINT
+        challenge_response = hashlib.sha256(combined.encode('utf-8')).hexdigest()
 
-        return jsonify({"challengeResponse": challenge_response})
+        return jsonify({"challengeResponse": challenge_response}), 200
 
-    if request.method == "POST":
+    elif request.method == "POST":
+        # Handle actual deletion notification here
+        data = request.get_json()
         print("----- Incoming POST Notification -----")
-        print(request.json)
-        return "", 200
+        print(data)
+        return '', 204  # Respond with 204 to acknowledge
 
-    return "Unsupported method", 405
+if __name__ == "__main__":
+    app.run(debug=True)
+
 
 
