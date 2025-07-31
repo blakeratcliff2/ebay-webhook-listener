@@ -1,35 +1,43 @@
-# app.py
-from flask import Flask, request, jsonify
-import hashlib
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
+import hashlib
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-VERIFICATION_TOKEN = os.getenv("EBAY_VERIFICATION_TOKEN")
+# Load from environment variable set in Railway
+VERIFICATION_TOKEN = os.environ.get("VERIFICATION_TOKEN")
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
         challenge_code = request.args.get("challenge_code")
-        endpoint = request.base_url
 
         if not challenge_code:
             return "Missing challenge_code", 400
+        if not VERIFICATION_TOKEN:
+            return "Missing VERIFICATION_TOKEN in environment", 500
 
-        concat = challenge_code + VERIFICATION_TOKEN + endpoint
-        response_hash = hashlib.sha256(concat.encode("utf-8")).hexdigest()
+        endpoint = request.url_root.rstrip("/")
 
-        print(f"Returning challengeResponse: {response_hash}")
-        return jsonify({"challengeResponse": response_hash})
+        # Logging for debugging
+        print("----- Incoming GET Request -----")
+        print(f"challenge_code: {challenge_code}")
+        print(f"endpoint: {endpoint}")
+        print(f"VERIFICATION_TOKEN: {VERIFICATION_TOKEN}")
 
-    elif request.method == "POST":
-        print("Received POST (notification):")
-        print(request.get_json())
-        return '', 200
+        # Create hash of challengeCode + verificationToken + endpoint
+        combined = challenge_code + VERIFICATION_TOKEN + endpoint
+        response_hash = hashlib.sha256(combined.encode("utf-8")).hexdigest()
+
+        return jsonify({"challengeResponse": response_hash}), 200
+
+    # Handle POST notifications later
+    if request.method == "POST":
+        return "", 200
+
+    return "Unsupported method", 405
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    app.run(debug=True)
+
 
