@@ -1,8 +1,8 @@
+import os
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# ✅ Replace this with your exact token from eBay Dev Portal
 EXPECTED_TOKEN = "ai-ebay-verify-2025-9fB7KxRzLdVpWm82QaJtG3YuNvX0CeLsThAyRfBz"
 
 @app.route("/", methods=["GET"])
@@ -23,4 +23,6 @@ def health_check():
     return "Webhook listener is live!", 200
 
 if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))  # fallback to 5000 if PORT not set
+    app.run(debug=False, host="0.0.0.0", port=port)
+
