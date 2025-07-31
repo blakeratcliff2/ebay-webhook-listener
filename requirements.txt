@@ -1,6 +1,7 @@
 flask
-gunicorn
 openai
+flask-ngrok
 python-dotenv
 pandas
+gunicorn
 
