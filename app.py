@@ -2,19 +2,16 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# eBay verification token (32–80 chars, same one you used in eBay form)
-VERIFICATION_TOKEN = "ai-ebay-listener-2025-token-for-marketplace-verify"
+@app.route('/', methods=['GET'])
+def verify_ebay():
+    challenge_code = request.args.get('challenge_code')
+    if challenge_code:
+        return jsonify({"challengeResponse": challenge_code}), 200
+    return "Missing challenge_code", 400
 
-@app.route('/', methods=['GET', 'POST'])
-def ebay_webhook():
-    if request.method == 'GET':
-        challenge_code = request.args.get('challenge_code')
-        if challenge_code:
-            return jsonify({'challengeResponse': challenge_code}), 200
-        else:
-            return "Missing challenge_code", 400
+@app.route('/health', methods=['GET'])
+def health_check():
+    return "Webhook is running", 200
 
-    elif request.method == 'POST':
-        data = request.get_json()
-        print("Webhook payload received:", data)
-        return jsonify({'message': 'Received'}), 200
+if __name__ == '__main__':
+    app.run(debug=False, host='0.0.0.0', port=5000)
